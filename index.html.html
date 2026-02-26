@@ -1,0 +1,1323 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BRAM Offshore - Controle de Pedidos</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&family=Righteous&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--ocean-deep:#001529;--ocean-mid:#003a70;--ocean-light:#005eb8;--wave-teal:#00d4ff;--coral:#ff3366;--golden:#ffaa00;--seafoam:#00e676}
+body{font-family:'Poppins',sans-serif;background:linear-gradient(135deg,#001529 0%,#003a70 50%,#005eb8 100%);background-attachment:fixed;color:#f8f9fa;min-height:100vh}
+body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;background-image:radial-gradient(circle at 20% 30%,rgba(0,212,255,0.1) 0%,transparent 50%),radial-gradient(circle at 80% 70%,rgba(0,128,255,0.1) 0%,transparent 50%);pointer-events:none;z-index:0}
+.container{position:relative;z-index:1}
+.header{background:linear-gradient(135deg,rgba(0,21,41,0.97),rgba(0,58,112,0.97));backdrop-filter:blur(20px);padding:2rem;box-shadow:0 10px 40px rgba(0,0,0,0.5);position:sticky;top:0;z-index:1000;border-bottom:3px solid var(--wave-teal)}
+.header-inner{max-width:1600px;margin:0 auto;display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:2rem}
+.logo-section{display:flex;align-items:center;gap:1.5rem}
+.logo{font-size:4rem;animation:float 3s ease-in-out infinite;filter:drop-shadow(0 8px 16px rgba(0,212,255,0.3))}
+@keyframes float{0%,100%{transform:translateY(0) rotate(-5deg)}50%{transform:translateY(-15px) rotate(5deg)}}
+.header-title{font-family:'Righteous',cursive;font-size:1.8rem;font-weight:900;letter-spacing:1px;text-shadow:2px 2px 10px rgba(0,0,0,0.5);line-height:1.3}
+.header-subtitle{font-size:0.95rem;opacity:0.9;font-weight:300;margin-top:0.25rem}
+.header-selo{display:flex;align-items:center;justify-content:center;border-left:1px solid rgba(255,255,255,0.15);border-right:1px solid rgba(255,255,255,0.15);padding:0 2rem}
+.header-selo svg{filter:drop-shadow(0 2px 8px rgba(0,212,255,0.25))}
+.comprador-selector{text-align:right;position:relative}
+.comprador-label{font-size:0.85rem;opacity:0.8;text-transform:uppercase;letter-spacing:1px;margin-bottom:0.5rem}
+.comprador-button{background:linear-gradient(135deg,var(--wave-teal),#0080ff);border:none;padding:1rem 2rem;border-radius:16px;color:white;font-family:'Righteous',cursive;font-size:1.3rem;cursor:pointer;transition:all 0.4s;box-shadow:0 4px 20px rgba(0,212,255,0.4);display:flex;align-items:center;gap:0.75rem}
+.comprador-button:hover{transform:translateY(-4px) scale(1.05);box-shadow:0 12px 40px rgba(0,212,255,0.6)}
+.comprador-dropdown{display:none;position:absolute;top:100%;right:0;margin-top:0.5rem;background:linear-gradient(135deg,rgba(0,21,41,0.98),rgba(0,58,112,0.98));backdrop-filter:blur(20px);border-radius:16px;box-shadow:0 10px 40px rgba(0,0,0,0.5);border:2px solid var(--wave-teal);min-width:280px;z-index:2000;overflow:hidden}
+.comprador-dropdown.active{display:block;animation:dropdownFadeIn 0.3s ease-out}
+@keyframes dropdownFadeIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+.comprador-option{padding:1rem 1.5rem;cursor:pointer;transition:all 0.3s;border-bottom:1px solid rgba(255,255,255,0.1);font-weight:600;display:flex;align-items:center;gap:0.75rem}
+.comprador-option:last-child{border-bottom:none}
+.comprador-option:hover{background:rgba(0,212,255,0.2);transform:translateX(8px)}
+.comprador-option.active{background:rgba(0,212,255,0.3);border-left:4px solid var(--wave-teal)}
+.update-time{font-size:0.75rem;opacity:0.7;margin-top:0.5rem}
+.filter-bar{background:rgba(255,255,255,0.1);backdrop-filter:blur(20px);padding:2rem;margin:2rem auto;max-width:1600px;border-radius:24px;box-shadow:0 10px 40px rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1)}
+.filter-content{display:flex;align-items:center;gap:2rem;justify-content:center;flex-wrap:wrap}
+.filter-label{font-weight:700;font-size:1.1rem;color:white}
+.filter-select,.area-selector{padding:1rem 2rem;font-size:1.1rem;border:3px solid var(--wave-teal);border-radius:16px;background:linear-gradient(135deg,rgba(0,58,112,0.9),rgba(0,94,184,0.9));color:white;font-weight:700;cursor:pointer;transition:all 0.4s;box-shadow:0 4px 20px rgba(0,212,255,0.3);min-width:250px}
+.filter-select option,.area-selector option{background:#003a70;color:white;padding:.5rem}
+.filter-select:hover,.area-selector:hover{transform:translateY(-4px) scale(1.02);box-shadow:0 12px 40px rgba(0,212,255,0.5);border-color:var(--golden)}
+.area-selector{background:linear-gradient(135deg,#ff6633,#ffaa00);border-color:#ff6633;font-family:'Righteous',cursive}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:2rem;margin:0 auto 3rem;max-width:1600px;padding:0 2rem}
+.kpi-card{background:linear-gradient(135deg,rgba(255,255,255,0.15),rgba(255,255,255,0.05));backdrop-filter:blur(20px);padding:2rem;border-radius:24px;box-shadow:0 8px 32px rgba(0,0,0,0.3);cursor:pointer;position:relative;overflow:hidden;transition:all 0.5s;border:1px solid rgba(255,255,255,0.1)}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:6px;background:var(--gradient);transform:scaleX(0);transform-origin:left;transition:transform 0.6s}
+.kpi-card:hover{transform:translateY(-12px) scale(1.03);box-shadow:0 20px 60px rgba(0,0,0,0.5);background:linear-gradient(135deg,rgba(255,255,255,0.25),rgba(255,255,255,0.15))}
+.kpi-card:hover::before{transform:scaleX(1)}
+.kpi-card[data-type="ocean"]{--gradient:linear-gradient(135deg,#001529,#005eb8)}
+.kpi-card[data-type="seafoam"]{--gradient:linear-gradient(135deg,#00e676,#00c853)}
+.kpi-card[data-type="coral"]{--gradient:linear-gradient(135deg,#ff3366,#ff6633)}
+.kpi-card[data-type="wave"]{--gradient:linear-gradient(135deg,#00d4ff,#0080ff)}
+.kpi-card[data-type="sunset"]{--gradient:linear-gradient(135deg,#ff6633,#ffaa00)}
+.kpi-card[data-type="gold"]{--gradient:linear-gradient(135deg,#ffaa00,#ff8800)}
+.kpi-icon{font-size:3rem;margin-bottom:1rem}
+.kpi-label{font-size:0.9rem;color:rgba(255,255,255,0.8);font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:0.75rem}
+.kpi-value{font-family:'Righteous',cursive;font-size:2.8rem;font-weight:900;color:white;line-height:1;text-shadow:0 2px 10px rgba(0,0,0,0.3)}
+.kpi-trend{margin-top:1rem;font-size:0.8rem;color:rgba(255,255,255,0.6);font-style:italic}
+.valor-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:2rem;margin:0 auto 3rem;max-width:1600px;padding:0 2rem}
+.valor-card{background:var(--gradient);padding:2.5rem;border-radius:28px;box-shadow:0 12px 48px rgba(0,0,0,0.4);color:white;cursor:pointer;transition:all 0.5s;border:2px solid rgba(255,255,255,0.2)}
+.valor-card:hover{transform:translateY(-16px) scale(1.05);box-shadow:0 24px 80px rgba(0,0,0,0.6)}
+.valor-label{font-size:1rem;font-weight:600;margin-bottom:1rem;letter-spacing:0.5px}
+.valor-value{font-family:'Righteous',cursive;font-size:2.5rem;font-weight:900;margin-bottom:1.5rem;text-shadow:2px 2px 8px rgba(0,0,0,0.3)}
+.valor-details{font-size:0.9rem;padding-top:1rem;border-top:2px solid rgba(255,255,255,0.3);line-height:1.8}
+.critical-section{max-width:1600px;margin:0 auto 3rem;padding:0 2rem}
+.critical-title{font-family:'Righteous',cursive;font-size:2rem;color:white;margin-bottom:1rem;text-align:center;text-shadow:0 2px 10px rgba(0,0,0,0.5)}
+.critical-subtitle{text-align:center;color:rgba(255,255,255,0.8);margin-bottom:2rem;font-size:0.95rem}
+.critical-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(450px,1fr));gap:2rem}
+.critical-card{background:linear-gradient(135deg,rgba(211,47,47,0.2),rgba(244,67,54,0.2));backdrop-filter:blur(20px);padding:2rem;border-radius:24px;border:2px solid rgba(244,67,54,0.5);box-shadow:0 12px 48px rgba(211,47,47,0.3)}
+.critical-card-title{font-family:'Righteous',cursive;font-size:1.3rem;color:#ff6659;margin-bottom:1.5rem;display:flex;align-items:center;gap:0.75rem}
+.critical-item{background:rgba(255,255,255,0.1);padding:1.25rem;border-radius:12px;margin-bottom:1rem;display:flex;justify-content:space-between;align-items:center;transition:all 0.3s;border-left:4px solid #ff6659;cursor:pointer}
+.critical-item:hover{background:rgba(255,255,255,0.15);transform:translateX(8px)}
+.critical-item-name{font-weight:600;color:white;flex:1}
+.critical-item-info{display:flex;flex-direction:column;align-items:flex-end;gap:0.25rem}
+.critical-item-value{font-family:'Righteous',cursive;font-size:1.3rem;color:#ff6659}
+.critical-item-detail{font-size:0.85rem;color:rgba(255,255,255,0.7)}
+.charts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(550px,1fr));gap:2rem;margin:0 auto 3rem;max-width:1600px;padding:0 2rem}
+.chart-card{background:linear-gradient(135deg,rgba(255,255,255,0.15),rgba(255,255,255,0.05));backdrop-filter:blur(20px);padding:2rem;border-radius:24px;box-shadow:0 10px 40px rgba(0,0,0,0.3);transition:all 0.5s;border:1px solid rgba(255,255,255,0.1)}
+.chart-card:hover{transform:translateY(-8px);box-shadow:0 20px 60px rgba(0,0,0,0.5)}
+.chart-title{font-family:'Righteous',cursive;font-size:1.4rem;font-weight:800;color:white;margin-bottom:2rem;text-shadow:0 2px 8px rgba(0,0,0,0.3)}
+.chart-container{position:relative;height:380px}
+.modal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,8,20,0.95);backdrop-filter:blur(10px);z-index:10000;align-items:center;justify-content:center;padding:2rem}
+.modal.active{display:flex}
+.modal-content{background:linear-gradient(135deg,#001529,#003a70);padding:3rem;border-radius:32px;max-width:700px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:0 24px 100px rgba(0,0,0,0.8);border:2px solid rgba(0,212,255,0.3);position:relative}
+.modal-close{position:absolute;top:1.5rem;right:1.5rem;background:linear-gradient(135deg,#ff3366,#ff6633);border:none;width:44px;height:44px;border-radius:50%;color:white;font-size:1.5rem;cursor:pointer;transition:all 0.3s;box-shadow:0 4px 16px rgba(255,51,102,0.5)}
+.modal-close:hover{transform:rotate(90deg) scale(1.1)}
+.modal-header{font-family:'Righteous',cursive;font-size:2rem;color:white;margin-bottom:2rem;text-shadow:0 2px 10px rgba(0,212,255,0.5)}
+.modal-stat{padding:1.5rem;background:linear-gradient(135deg,rgba(0,212,255,0.15),rgba(0,128,255,0.15));border-radius:16px;margin-bottom:1rem;display:flex;justify-content:space-between;align-items:center;transition:all 0.3s;border-left:4px solid var(--wave-teal)}
+.modal-stat:hover{transform:translateX(8px)}
+.modal-stat-label{font-weight:600;color:rgba(255,255,255,0.9)}
+.modal-stat-value{font-family:'Righteous',cursive;font-size:1.5rem;color:var(--wave-teal);text-shadow:0 2px 8px rgba(0,212,255,0.3);text-align:right;max-width:55%;word-break:break-word}
+.modal-scroll-list{max-height:400px;overflow-y:auto;padding-right:1rem}
+.modal-scroll-list::-webkit-scrollbar{width:8px}
+.modal-scroll-list::-webkit-scrollbar-track{background:rgba(255,255,255,0.1);border-radius:4px}
+.modal-scroll-list::-webkit-scrollbar-thumb{background:var(--wave-teal);border-radius:4px}
+.loading{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:linear-gradient(135deg,rgba(0,21,41,0.98),rgba(0,58,112,0.98));padding:3rem;border-radius:24px;z-index:9999;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.7);border:2px solid rgba(0,212,255,0.3);min-width:400px}
+.loading-spinner{border:4px solid rgba(0,212,255,0.2);border-top:4px solid var(--wave-teal);border-radius:50%;width:60px;height:60px;animation:spin 1s linear infinite;margin:0 auto 1.5rem}
+@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+@media(max-width:900px){.header-inner{grid-template-columns:1fr;justify-items:center;text-align:center;gap:1.2rem}.header-selo{border:none;padding:0.5rem 0}.comprador-selector{text-align:center}.comprador-dropdown{right:50%;transform:translateX(50%)}.update-time{text-align:center}.kpi-grid{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1rem}.charts-grid,.critical-grid{grid-template-columns:1fr}.valor-grid{grid-template-columns:1fr}.filter-content{flex-direction:column}.loading{min-width:300px;padding:2rem}}
+.consolidado-view{display:none}.consolidado-view.active{display:block}.normal-view.hidden{display:none}
+.cons-header{text-align:center;margin:2rem auto;padding:2rem;background:linear-gradient(135deg,rgba(0,230,118,.2),rgba(0,200,83,.2));border-radius:24px;border:2px solid #00e676;max-width:1600px}
+.cons-title{font-family:Righteous,cursive;font-size:2rem;color:#00e676;margin-bottom:1rem}
+.cons-subtitle{font-size:1rem;opacity:.9;margin-bottom:1.5rem}
+.cons-filter{margin-top:1.5rem}.cons-filter-label{font-size:.9rem;font-weight:700;margin-bottom:.5rem}
+.cons-filter-select{padding:.8rem 1.5rem;font-size:1rem;border:2px solid #00e676;border-radius:12px;background:linear-gradient(135deg,rgba(0,230,118,.3),rgba(0,200,83,.3));color:white;font-weight:700;cursor:pointer;min-width:200px}
+.cons-filter-select option{background:#003a70;color:white;padding:.5rem}
+.cons-resumo{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1.5rem;margin:0 auto 2rem;padding:0 2rem;max-width:1600px}
+.cons-resumo-item{text-align:center;padding:1.5rem;background:rgba(255,255,255,.1);border-radius:16px;cursor:pointer;transition:all .3s}
+.cons-resumo-item:hover{background:rgba(255,255,255,.2);transform:translateY(-4px)}
+.cons-resumo-label{font-size:.85rem;opacity:.8;margin-bottom:.5rem}
+.cons-resumo-value{font-family:Righteous,cursive;font-size:2rem;font-weight:900;color:#00e676}
+.cons-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(450px,1fr));gap:2rem;padding:0 2rem;max-width:1600px;margin:0 auto 3rem}
+.cons-card{background:linear-gradient(135deg,rgba(255,255,255,.15),rgba(255,255,255,.05));backdrop-filter:blur(20px);border-radius:24px;padding:2rem;border:2px solid rgba(255,255,255,.1);position:relative;overflow:hidden;cursor:pointer;transition:all .4s}
+.cons-card:hover{transform:translateY(-8px);box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.cons-card::before{content:'';position:absolute;top:0;left:0;right:0;height:6px;background:var(--grad)}
+.cons-card[data-comp="Lineker"]{--grad:linear-gradient(135deg,#00d4ff,#0080ff)}
+.cons-card[data-comp="Rafael"]{--grad:linear-gradient(135deg,#00e676,#00c853)}
+.cons-card[data-comp="Thiago"]{--grad:linear-gradient(135deg,#ff6633,#ffaa00)}
+.cons-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:2px solid rgba(255,255,255,.1)}
+.cons-nome{font-family:Righteous,cursive;font-size:1.6rem;font-weight:900}
+.cons-var{padding:.5rem 1rem;border-radius:12px;font-size:.9rem;font-weight:700;display:flex;align-items:center;gap:.5rem}
+.cons-var.pos{background:linear-gradient(135deg,rgba(0,230,118,.3),rgba(0,200,83,.3));border:2px solid #00e676}
+.cons-var.neg{background:linear-gradient(135deg,rgba(255,51,102,.3),rgba(255,102,51,.3));border:2px solid #ff3366}
+.cons-main{background:linear-gradient(135deg,rgba(0,212,255,.2),rgba(0,128,255,.2));padding:1.5rem;border-radius:16px;margin-bottom:1.5rem;border-left:4px solid var(--wave-teal)}
+.cons-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem}
+.cons-lbl{font-size:.9rem;opacity:.9;text-transform:uppercase;letter-spacing:1px}
+.cons-val{font-family:Righteous,cursive;font-size:2rem;font-weight:900;color:var(--wave-teal)}
+.cons-det{font-size:.85rem;opacity:.8;margin-top:.5rem}
+.cons-break{display:grid;grid-template-columns:repeat(2,1fr);gap:1rem;margin-bottom:1.5rem}
+.cons-break-item{background:rgba(255,255,255,.1);padding:1rem;border-radius:12px;border-left:3px solid var(--cor);cursor:pointer;transition:all .3s}
+.cons-break-item:hover{background:rgba(255,255,255,.2);transform:translateX(8px)}
+.cons-break-item[data-t="sa"]{--cor:#00d4ff}
+.cons-break-item[data-t="pm"]{--cor:#ffaa00}
+.cons-break-item[data-t="aa"]{--cor:#00e676}
+.cons-break-item[data-t="pf"]{--cor:#ff6633}
+.cons-break-lbl{font-size:.75rem;opacity:.8;margin-bottom:.25rem}
+.cons-break-val{font-size:1.1rem;font-weight:700;color:var(--cor)}
+.cons-break-mon{font-size:.8rem;opacity:.7;margin-top:.25rem}
+.cons-forn{margin-top:1.5rem;padding-top:1.5rem;border-top:2px solid rgba(255,255,255,.1)}
+.cons-forn-tit{font-size:.9rem;font-weight:700;margin-bottom:1rem;opacity:.9;text-transform:uppercase}
+.cons-forn-item{background:rgba(255,255,255,.08);padding:.9rem;border-radius:10px;margin-bottom:.75rem;display:flex;justify-content:space-between;align-items:center;border-left:3px solid var(--wave-teal);cursor:pointer;transition:all .3s}
+.cons-forn-item:hover{background:rgba(255,255,255,.18);transform:translateX(12px);box-shadow:0 4px 20px rgba(0,212,255,.3)}
+.cons-forn-nome{font-size:.85rem;font-weight:600;flex:1}
+.cons-forn-stats{text-align:right}
+.cons-forn-qtd{font-family:Righteous,cursive;font-size:1rem;color:var(--wave-teal)}
+.cons-forn-val{font-size:.75rem;opacity:.7;margin-top:.2rem}
+@media(max-width:900px){.cons-cards{grid-template-columns:1fr}.cons-break{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div id="loadingScreen" class="loading">
+  <div class="loading-spinner"></div>
+  <div style="color:white;font-size:1.2rem;font-weight:600">Carregando dados...</div>
+</div>
+
+<div class="header">
+  <div class="header-inner">
+    <div class="logo-section">
+      <div class="logo">🚢</div>
+      <div>
+        <div class="header-title">Controle de Pedidos - Serviços<br>BRAM OFFSHORE</div>
+        <div class="header-subtitle">Dashboard Analítico | 2026</div>
+      </div>
+    </div>
+    <div class="header-selo">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 56" width="220" height="56">
+        <g transform="translate(10,8) scale(0.72)">
+          <circle cx="20" cy="3.5" r="3" fill="none" stroke="rgba(255,255,255,0.95)" stroke-width="2.2"/>
+          <line x1="20" y1="6" x2="20" y2="46" stroke="rgba(255,255,255,0.95)" stroke-width="3.2" stroke-linecap="round"/>
+          <line x1="9" y1="14" x2="31" y2="14" stroke="rgba(255,255,255,0.95)" stroke-width="3.2" stroke-linecap="round"/>
+          <path d="M14 10 Q14 4 20 4 Q26 4 26 10" fill="none" stroke="rgba(255,255,255,0.95)" stroke-width="3.2" stroke-linecap="round"/>
+          <path d="M20 46 Q8 42 8 33" fill="none" stroke="rgba(255,255,255,0.95)" stroke-width="3.2" stroke-linecap="round"/>
+          <path d="M20 46 Q32 42 32 33" fill="none" stroke="rgba(255,255,255,0.95)" stroke-width="3.2" stroke-linecap="round"/>
+          <path d="M8 33 Q4 35 6 39" fill="none" stroke="rgba(255,255,255,0.95)" stroke-width="2.8" stroke-linecap="round"/>
+          <path d="M32 33 Q36 35 34 39" fill="none" stroke="rgba(255,255,255,0.95)" stroke-width="2.8" stroke-linecap="round"/>
+        </g>
+        <text x="46" y="22" font-family="Arial,Helvetica,sans-serif" font-size="15" font-weight="900" fill="white" letter-spacing="1.8">SUPPLY CHAIN</text>
+        <text x="47" y="40" font-family="Arial,Helvetica,sans-serif" font-size="11.5" font-weight="400" fill="rgba(255,255,255,0.85)" letter-spacing="3.5">DEPARTMENT</text>
+      </svg>
+    </div>
+    <div class="comprador-selector">
+      <div class="comprador-label">Comprador Técnico</div>
+      <button class="comprador-button" onclick="toggleCompradorDropdown()">
+        <span id="compradorAtual">Lineker</span>
+        <span style="font-size:0.8rem">▼</span>
+      </button>
+      <div class="comprador-dropdown" id="compradorDropdown"></div>
+      <div class="update-time" id="lastUpdate"></div>
+    </div>
+  </div>
+</div>
+
+<div class="filter-bar">
+  <div class="filter-content">
+    <span class="filter-label">🔧 Área de Serviço:</span>
+    <select class="area-selector" id="areaSelector" onchange="changeArea()">
+      <option value="manutencao">🔧 Manutenção</option>
+      <option value="operacoes">⚙️ Operações</option>
+    </select>
+    <span class="filter-label">📅 Período:</span>
+    <select class="filter-select" id="monthFilter" onchange="filterData()">
+      <option value="TODOS">📊 TODOS OS MESES</option>
+    </select>
+  </div>
+</div>
+
+<div class="container">
+  <div id="consolidadoView" class="consolidado-view"></div>
+  <div id="normalView" class="normal-view">
+  <div class="kpi-grid">
+    <div class="kpi-card" data-type="ocean" onclick="showKPIDetails('total')">
+      <div class="kpi-icon">📦</div>
+      <div class="kpi-label">Total de Pedidos</div>
+      <div class="kpi-value" id="kpi-total">-</div>
+      <div class="kpi-trend">Clique para detalhes</div>
+    </div>
+    <div class="kpi-card" data-type="seafoam" onclick="showKPIDetails('aprovados')">
+      <div class="kpi-icon">✅</div>
+      <div class="kpi-label">Aprovados</div>
+      <div class="kpi-value" id="kpi-aprovados">-</div>
+      <div class="kpi-trend">Clique para detalhes</div>
+    </div>
+    <div class="kpi-card" data-type="coral" onclick="showKPIDetails('pendentes')">
+      <div class="kpi-icon">⏳</div>
+      <div class="kpi-label">Em Aprovação</div>
+      <div class="kpi-value" id="kpi-pendentes">-</div>
+      <div class="kpi-trend">Clique para detalhes</div>
+    </div>
+    <div class="kpi-card" data-type="sunset" onclick="showKPIDetails('fornecedores')">
+      <div class="kpi-icon">🏢</div>
+      <div class="kpi-label">Fornecedores</div>
+      <div class="kpi-value" id="kpi-fornecedores">-</div>
+      <div class="kpi-trend">Clique para detalhes</div>
+    </div>
+    <div class="kpi-card" data-type="gold" onclick="showKPIDetails('embarcacoes')">
+      <div class="kpi-icon">⚓</div>
+      <div class="kpi-label">Embarcações</div>
+      <div class="kpi-value" id="kpi-embarcacoes">-</div>
+      <div class="kpi-trend">Clique para detalhes</div>
+    </div>
+    <div class="kpi-card" data-type="wave" onclick="showKPIDetails('media_dia')">
+      <div class="kpi-icon">📈</div>
+      <div class="kpi-label">Média por Dia</div>
+      <div class="kpi-value" id="kpi-media">-</div>
+      <div class="kpi-trend">Clique para detalhes</div>
+    </div>
+  </div>
+
+  <div class="valor-grid">
+    <div class="valor-card" style="--gradient:linear-gradient(135deg,#00e676,#00c853)" onclick="showValorDetails('total')">
+      <div class="valor-label">💰 VALOR TOTAL</div>
+      <div class="valor-value" id="valor-total">-</div>
+      <div class="valor-details">Clique para breakdown</div>
+    </div>
+    <div class="valor-card" style="--gradient:linear-gradient(135deg,#001529,#005eb8)" onclick="showValorDetails('medio')">
+      <div class="valor-label">📊 VALOR MÉDIO</div>
+      <div class="valor-value" id="valor-medio">-</div>
+      <div class="valor-details">Clique para média por fornecedor</div>
+    </div>
+    <div class="valor-card" style="--gradient:linear-gradient(135deg,#ff6633,#ffaa00)" onclick="showValorDetails('maior')">
+      <div class="valor-label">⭐ MAIOR PEDIDO</div>
+      <div class="valor-value" id="valor-maior">-</div>
+      <div class="valor-details">
+        <div id="maior-fornecedor">-</div>
+        <div id="maior-embarcacao">-</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="critical-section">
+    <div class="critical-title">🚨 FORNECEDORES CRÍTICOS - PEDIDOS PENDENTES</div>
+    <div class="critical-subtitle">Soma total de todos os pedidos em aprovação por fornecedor</div>
+    <div class="critical-grid">
+      <div class="critical-card">
+        <div class="critical-card-title">💰 Top 10 - Pendentes de Aprovação</div>
+        <div id="criticosValor"></div>
+      </div>
+      <div class="critical-card">
+        <div class="critical-card-title">📊 Top 10 - Quantidade Pendente de Aprovação</div>
+        <div id="criticosQtd"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-title">🏆 Top 10 Fornecedores</div>
+      <div class="chart-container"><canvas id="fornecedoresChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">⚓ Top 10 Embarcações</div>
+      <div class="chart-container"><canvas id="embarcacoesChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">📈 Status de Aprovação</div>
+      <div class="chart-container"><canvas id="statusChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">📊 Distribuição por Área</div>
+      <div class="chart-container"><canvas id="areasChart"></canvas></div>
+    </div>
+  </div>
+  </div><!-- FIM NORMAL VIEW -->
+</div><!-- FIM CONTAINER -->
+
+<div class="modal" id="detailsModal">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeModal()">×</button>
+    <div class="modal-header" id="modalTitle">Detalhes</div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+const API_URL = 'https://script.google.com/macros/s/AKfycbxSVoT9gjBy0isz_fgJVIs7cYwQim0mn1is9O09ZHOPqqSD_bQ3f_1y79BE_nW-Ghz9/exec';
+let dashboardData = null;
+let allData = [];
+let currentArea = 'manutencao';
+let currentComprador = 'Lineker';
+let currentFilter = 'TODOS';
+let charts = {};
+let compradoresDisponiveis = [];
+
+Chart.register(ChartDataLabels);
+
+document.addEventListener('DOMContentLoaded', loadData);
+
+// Fecha dropdown ao clicar fora
+document.addEventListener('click', function(e) {
+  const dropdown = document.getElementById('compradorDropdown');
+  const button = document.querySelector('.comprador-button');
+  if (dropdown && !dropdown.contains(e.target) && !button.contains(e.target)) {
+    dropdown.classList.remove('active');
+  }
+});
+
+async function loadData() {
+  try {
+    console.log('[INÍCIO] Carregando dados...');
+    
+    const response = await fetch(API_URL, {
+      method: 'GET',
+      redirect: 'follow'
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    
+    const responseText = await response.text();
+    dashboardData = JSON.parse(responseText);
+    
+    if (dashboardData.erro) {
+      throw new Error(dashboardData.erro);
+    }
+    
+    console.log('[SUCESSO] Dados carregados!');
+    console.log('[COMPRADORES]', dashboardData.compradores_disponiveis);
+    
+    compradoresDisponiveis = dashboardData.compradores_disponiveis;
+    
+    document.getElementById('loadingScreen').style.display = 'none';
+    document.getElementById('lastUpdate').textContent = '🕐 ' + new Date().toLocaleTimeString('pt-BR');
+    
+    buildCompradorDropdown();
+    changeComprador(currentComprador);
+    
+  } catch (erro) {
+    console.error('[ERRO]', erro);
+    document.getElementById('loadingScreen').innerHTML = `
+      <div style="color:#ff6659;text-align:center">
+        <div style="font-size:1.4rem;margin-bottom:1rem">❌ Erro ao Carregar</div>
+        <div style="font-size:0.9rem">${erro.message}</div>
+        <button onclick="location.reload()" style="margin-top:1.5rem;padding:0.8rem 2rem;background:#00d4ff;border:none;border-radius:8px;color:#001529;font-weight:700;cursor:pointer">
+          🔄 Recarregar
+        </button>
+      </div>
+    `;
+  }
+}
+
+function buildCompradorDropdown() {
+  const dropdown = document.getElementById('compradorDropdown');
+  dropdown.innerHTML = '';
+  
+  compradoresDisponiveis.forEach(comprador => {
+    const option = document.createElement('div');
+    option.className = 'comprador-option';
+    if (comprador === currentComprador) option.classList.add('active');
+    
+    const icon = comprador === 'CONSOLIDADO' ? '📊' : '👤';
+    option.innerHTML = `<span>${icon}</span><span>${comprador}</span>`;
+    option.onclick = () => {
+      changeComprador(comprador);
+      dropdown.classList.remove('active');
+    };
+    
+    dropdown.appendChild(option);
+  });
+}
+
+function toggleCompradorDropdown() {
+  document.getElementById('compradorDropdown').classList.toggle('active');
+}
+
+function changeComprador(novoComprador) {
+  currentComprador = novoComprador;
+  document.getElementById('compradorAtual').textContent = novoComprador;
+  
+  // Atualiza dropdown
+  document.querySelectorAll('.comprador-option').forEach(opt => {
+    opt.classList.remove('active');
+    if (opt.textContent.trim().includes(novoComprador)) {
+      opt.classList.add('active');
+    }
+  });
+  
+  // Atualiza seletor de área
+  const areaSelector = document.getElementById('areaSelector');
+  areaSelector.innerHTML = '<option value="manutencao">🔧 Manutenção</option><option value="operacoes">⚙️ Operações</option>';
+  
+  // Se for Rafael, adiciona opção Consolidado
+  if (novoComprador === 'Rafael') {
+    const optConsolidado = document.createElement('option');
+    optConsolidado.value = 'consolidado';
+    optConsolidado.textContent = '📊 CONSOLIDADO';
+    areaSelector.appendChild(optConsolidado);
+  }
+  
+  currentArea = 'manutencao';
+  areaSelector.value = 'manutencao';
+  
+  changeArea();
+}
+
+function changeArea() {
+  currentArea = document.getElementById('areaSelector').value;
+  
+  // NOVO: Verifica se é consolidado BACKLOG
+  if (currentArea === 'consolidado' && currentComprador === 'Rafael') {
+    renderConsolidadoBacklog();
+    return;
+  }
+  
+  // Volta para view normal
+  document.getElementById('consolidadoView').classList.remove('active');
+  document.getElementById('normalView').classList.remove('hidden');
+  
+  // Se Rafael selecionou Consolidado antigo, usa dados de CONSOLIDADO
+  if (currentArea === 'consolidado' && currentComprador === 'Rafael') {
+    if (!dashboardData.dados.CONSOLIDADO) {
+      alert('Dados consolidados não disponíveis');
+      return;
+    }
+    allData = [
+      ...dashboardData.dados.CONSOLIDADO.manutencao.dados_completos,
+      ...dashboardData.dados.CONSOLIDADO.operacoes.dados_completos
+    ];
+  } else {
+    // Dados normais do comprador selecionado
+    const dadosComprador = dashboardData.dados[currentComprador];
+    if (!dadosComprador) {
+      alert('Dados do comprador não disponíveis');
+      return;
+    }
+    allData = dadosComprador[currentArea].dados_completos;
+  }
+  
+  const monthFilter = document.getElementById('monthFilter');
+  monthFilter.innerHTML = '<option value="TODOS">📊 TODOS OS MESES</option>';
+  
+  const meses = [...new Set(allData.map(d => d.MES_ANO))].filter(m => m).sort();
+  meses.forEach(mes => {
+    const opt = document.createElement('option');
+    opt.value = mes;
+    opt.textContent = '📅 ' + mes;
+    monthFilter.appendChild(opt);
+  });
+  
+  currentFilter = 'TODOS';
+  filterData();
+}
+
+function filterData() {
+  currentFilter = document.getElementById('monthFilter').value;
+  let filteredData = allData;
+  
+  // Se não é consolidado, filtra por comprador
+  if (!(currentArea === 'consolidado' && currentComprador === 'Rafael')) {
+    filteredData = filteredData.filter(d => d.COMPRADOR === currentComprador);
+  }
+  
+  if (currentFilter !== 'TODOS') {
+    filteredData = filteredData.filter(d => d.MES_ANO === currentFilter);
+  }
+  
+  updateKPIs(filteredData);
+  updateCriticalSuppliers(filteredData);
+  updateCharts(filteredData);
+}
+
+function updateKPIs(data) {
+  document.getElementById('kpi-total').textContent = data.length;
+  document.getElementById('kpi-aprovados').textContent = data.filter(d => d.STATUS === 'PEDIDO APROVADO').length;
+  document.getElementById('kpi-pendentes').textContent = data.filter(d => d.STATUS === 'EM APROVAÇÃO').length;
+  document.getElementById('kpi-fornecedores').textContent = new Set(data.map(d => d.FORNECEDOR)).size;
+  document.getElementById('kpi-embarcacoes').textContent = new Set(data.map(d => d.EMBARCAÇÃO)).size;
+  
+  const diasUnicos = new Set(data.map(d => d.DATA_STR)).size;
+  document.getElementById('kpi-media').textContent = diasUnicos > 0 ? (data.length / diasUnicos).toFixed(1) : 0;
+  
+  const valores = data.map(d => d.VALOR);
+  const total = valores.reduce((a, b) => a + b, 0);
+  const maior = Math.max(...valores);
+  
+  document.getElementById('valor-total').textContent = formatCurrency(total);
+  document.getElementById('valor-medio').textContent = formatCurrency(total / valores.length);
+  document.getElementById('valor-maior').textContent = formatCurrency(maior);
+  
+  const maiorPedido = data.find(d => d.VALOR === maior);
+  if (maiorPedido) {
+    document.getElementById('maior-fornecedor').textContent = '🏢 ' + maiorPedido.FORNECEDOR;
+    document.getElementById('maior-embarcacao').textContent = '⚓ ' + maiorPedido.EMBARCAÇÃO;
+  }
+}
+
+function updateCriticalSuppliers(data) {
+  const pendentes = data.filter(d => d.STATUS === 'EM APROVAÇÃO');
+  const criticosValor = {};
+  const criticosQtd = {};
+  
+  pendentes.forEach(d => {
+    const forn = d.FORNECEDOR;
+    criticosValor[forn] = (criticosValor[forn] || 0) + d.VALOR;
+    criticosQtd[forn] = (criticosQtd[forn] || 0) + 1;
+  });
+  
+  const criticosValorSorted = Object.entries(criticosValor).sort((a, b) => b[1] - a[1]).slice(0, 10);
+  document.getElementById('criticosValor').innerHTML = criticosValorSorted.map(([forn, valor]) => {
+    const qtd = criticosQtd[forn];
+    return `
+      <div class="critical-item" onclick="showCriticalDetails('${forn.replace(/'/g, "\\'")}')">
+        <span class="critical-item-name">${forn}</span>
+        <div class="critical-item-info">
+          <span class="critical-item-value">${formatCurrency(valor)}</span>
+          <span class="critical-item-detail">${qtd} pedido${qtd > 1 ? 's' : ''}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+  
+  const criticosQtdSorted = Object.entries(criticosQtd).sort((a, b) => b[1] - a[1]).slice(0, 10);
+  document.getElementById('criticosQtd').innerHTML = criticosQtdSorted.map(([forn, qtd]) => {
+    const valor = criticosValor[forn];
+    return `
+      <div class="critical-item" onclick="showCriticalDetails('${forn.replace(/'/g, "\\'")}')">
+        <span class="critical-item-name">${forn}</span>
+        <div class="critical-item-info">
+          <span class="critical-item-value">${qtd} pedido${qtd > 1 ? 's' : ''}</span>
+          <span class="critical-item-detail">${formatCurrency(valor)}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function showCriticalDetails(fornecedor) {
+  const modal = document.getElementById('detailsModal');
+  const title = document.getElementById('modalTitle');
+  const body = document.getElementById('modalBody');
+  
+  let filteredData = allData;
+  
+  if (!(currentArea === 'consolidado' && currentComprador === 'Rafael')) {
+    filteredData = filteredData.filter(d => d.COMPRADOR === currentComprador);
+  }
+  
+  if (currentFilter !== 'TODOS') {
+    filteredData = filteredData.filter(d => d.MES_ANO === currentFilter);
+  }
+  
+  const pendentes = filteredData.filter(d => d.STATUS === 'EM APROVAÇÃO' && d.FORNECEDOR === fornecedor);
+  const totalValor = pendentes.reduce((sum, d) => sum + d.VALOR, 0);
+  
+  title.textContent = '🚨 Pendentes - ' + fornecedor;
+  
+  let content = `
+    <div class="modal-stat">
+      <span class="modal-stat-label">Total Pendentes</span>
+      <span class="modal-stat-value">${pendentes.length}</span>
+    </div>
+    <div class="modal-stat">
+      <span class="modal-stat-label">Valor Total</span>
+      <span class="modal-stat-value">${formatCurrency(totalValor)}</span>
+    </div>
+    <div style="margin-top:2rem;margin-bottom:1rem;font-weight:600;color:rgba(255,255,255,0.9);">📋 Lista de Pedidos:</div>
+    <div class="modal-scroll-list">
+  `;
+  
+  pendentes.forEach((p, idx) => {
+    content += `
+      <div class="modal-stat">
+        <div>
+          <div class="modal-stat-label">#${idx + 1} - ${p.DATA_STR}</div>
+          <div style="font-size:0.85rem;color:rgba(255,255,255,0.7);margin-top:0.25rem;">⚓ ${p.EMBARCAÇÃO}</div>
+          ${currentArea === 'consolidado' ? `<div style="font-size:0.8rem;color:rgba(0,212,255,0.9);margin-top:0.25rem;">👤 ${p.COMPRADOR}</div>` : ''}
+        </div>
+        <span class="modal-stat-value">${formatCurrency(p.VALOR)}</span>
+      </div>
+    `;
+  });
+  
+  content += '</div>';
+  body.innerHTML = content;
+  modal.classList.add('active');
+}
+
+function updateCharts(data) {
+  const fornecedoresMap = {};
+  data.forEach(d => {
+    if (!fornecedoresMap[d.FORNECEDOR]) fornecedoresMap[d.FORNECEDOR] = 0;
+    fornecedoresMap[d.FORNECEDOR]++;
+  });
+  
+  const fornecedoresSorted = Object.entries(fornecedoresMap).sort((a, b) => b[1] - a[1]).slice(0, 10);
+  updateBarChart('fornecedoresChart', fornecedoresSorted.map(f => f[0]), fornecedoresSorted.map(f => f[1]), '#00d4ff');
+  
+  const embarcacoesMap = {};
+  data.forEach(d => {
+    if (!embarcacoesMap[d.EMBARCAÇÃO]) embarcacoesMap[d.EMBARCAÇÃO] = 0;
+    embarcacoesMap[d.EMBARCAÇÃO]++;
+  });
+  
+  const embarcacoesSorted = Object.entries(embarcacoesMap).sort((a, b) => b[1] - a[1]).slice(0, 10);
+  updateBarChart('embarcacoesChart', embarcacoesSorted.map(e => e[0]), embarcacoesSorted.map(e => e[1]), '#ffaa00');
+  
+  const statusMap = {};
+  data.forEach(d => {statusMap[d.STATUS] = (statusMap[d.STATUS] || 0) + 1;});
+  updateDoughnutChart('statusChart', Object.keys(statusMap), Object.values(statusMap), ['#00e676', '#ff6633']);
+  
+  const areasMap = {};
+  data.forEach(d => {areasMap[d['ÁREA RESPONSÁVEL']] = (areasMap[d['ÁREA RESPONSÁVEL']] || 0) + 1;});
+  updateDoughnutChart('areasChart', Object.keys(areasMap), Object.values(areasMap), ['#00e676', '#0080ff', '#ffaa00']);
+}
+
+function updateBarChart(chartId, labels, data, color) {
+  const ctx = document.getElementById(chartId);
+  if (charts[chartId]) charts[chartId].destroy();
+  
+  charts[chartId] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: data,
+        backgroundColor: color,
+        borderRadius: 12,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {display: false},
+        datalabels: {color: '#fff', font: {weight: 'bold', size: 12}, anchor: 'end', align: 'start'}
+      },
+      scales: {
+        y: {beginAtZero: true, grid: {color: 'rgba(255,255,255,0.1)'}, ticks: {color: '#fff'}},
+        x: {grid: {display: false}, ticks: {color: '#fff'}}
+      }
+    }
+  });
+}
+
+function updateDoughnutChart(chartId, labels, data, colors) {
+  const ctx = document.getElementById(chartId);
+  if (charts[chartId]) charts[chartId].destroy();
+  
+  const total = data.reduce((a, b) => a + b, 0);
+  
+  charts[chartId] = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: data,
+        backgroundColor: colors,
+        borderWidth: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {position: 'bottom', labels: {padding: 20, font: {size: 13, weight: '600'}, color: '#fff'}},
+        datalabels: {
+          color: '#fff',
+          font: {weight: 'bold', size: 14},
+          formatter: (value) => ((value / total) * 100).toFixed(1) + '%'
+        }
+      }
+    }
+  });
+}
+
+function showKPIDetails(type) {
+  const modal = document.getElementById('detailsModal');
+  const title = document.getElementById('modalTitle');
+  const body = document.getElementById('modalBody');
+  
+  let filteredData = allData;
+  
+  if (!(currentArea === 'consolidado' && currentComprador === 'Rafael')) {
+    filteredData = filteredData.filter(d => d.COMPRADOR === currentComprador);
+  }
+  
+  if (currentFilter !== 'TODOS') {
+    filteredData = filteredData.filter(d => d.MES_ANO === currentFilter);
+  }
+  
+  let content = '';
+  
+  switch(type) {
+    case 'total':
+      title.textContent = '📦 Total de Pedidos';
+      const porMes = {};
+      filteredData.forEach(d => { if(d.MES_ANO) porMes[d.MES_ANO] = (porMes[d.MES_ANO] || 0) + 1; });
+      content = Object.entries(porMes).sort().map(([mes, qtd]) => 
+        `<div class="modal-stat"><span class="modal-stat-label">📅 ${mes}</span><span class="modal-stat-value">${qtd}</span></div>`
+      ).join('');
+      break;
+      
+    case 'aprovados':
+      title.textContent = '✅ Pedidos Aprovados';
+      const aprovados = filteredData.filter(d => d.STATUS === 'PEDIDO APROVADO');
+      const valorTotal = aprovados.reduce((sum, d) => sum + d.VALOR, 0);
+      content = `
+        <div class="modal-stat"><span class="modal-stat-label">Total Aprovados</span><span class="modal-stat-value">${aprovados.length}</span></div>
+        <div class="modal-stat"><span class="modal-stat-label">Valor Total</span><span class="modal-stat-value">${formatCurrency(valorTotal)}</span></div>
+        <div class="modal-stat"><span class="modal-stat-label">Percentual</span><span class="modal-stat-value">${((aprovados.length / filteredData.length) * 100).toFixed(1)}%</span></div>
+      `;
+      break;
+      
+    case 'pendentes':
+      title.textContent = '⏳ Em Aprovação';
+      const pendentes = filteredData.filter(d => d.STATUS === 'EM APROVAÇÃO');
+      const valorPendente = pendentes.reduce((sum, d) => sum + d.VALOR, 0);
+      content = `
+        <div class="modal-stat"><span class="modal-stat-label">Total Em Aprovação</span><span class="modal-stat-value">${pendentes.length}</span></div>
+        <div class="modal-stat"><span class="modal-stat-label">Valor Pendente</span><span class="modal-stat-value">${formatCurrency(valorPendente)}</span></div>
+        <div class="modal-stat"><span class="modal-stat-label">Percentual</span><span class="modal-stat-value">${((pendentes.length / filteredData.length) * 100).toFixed(1)}%</span></div>
+      `;
+      break;
+      
+    case 'fornecedores':
+      title.textContent = '🏢 Todos os Fornecedores';
+      const fornMap = {};
+      filteredData.forEach(d => { fornMap[d.FORNECEDOR] = (fornMap[d.FORNECEDOR] || 0) + 1; });
+      content = '<div class="modal-scroll-list">' + Object.entries(fornMap).sort((a, b) => b[1] - a[1]).map(([forn, qtd]) => 
+        `<div class="modal-stat"><span class="modal-stat-label">${forn}</span><span class="modal-stat-value">${qtd}</span></div>`
+      ).join('') + '</div>';
+      break;
+      
+    case 'embarcacoes':
+      title.textContent = '⚓ Todas as Embarcações';
+      const embMap = {};
+      filteredData.forEach(d => { embMap[d.EMBARCAÇÃO] = (embMap[d.EMBARCAÇÃO] || 0) + 1; });
+      content = '<div class="modal-scroll-list">' + Object.entries(embMap).sort((a, b) => b[1] - a[1]).map(([emb, qtd]) => 
+        `<div class="modal-stat"><span class="modal-stat-label">${emb}</span><span class="modal-stat-value">${qtd}</span></div>`
+      ).join('') + '</div>';
+      break;
+      
+    case 'media_dia':
+      title.textContent = '📈 Média de Processos por Dia';
+      const diasUnicos = new Set(filteredData.map(d => d.DATA_STR)).size;
+      const mediaDia = diasUnicos > 0 ? (filteredData.length / diasUnicos).toFixed(2) : 0;
+      content = `
+        <div class="modal-stat"><span class="modal-stat-label">Média por Dia</span><span class="modal-stat-value">${mediaDia}</span></div>
+        <div class="modal-stat"><span class="modal-stat-label">Total de Dias</span><span class="modal-stat-value">${diasUnicos}</span></div>
+        <div class="modal-stat"><span class="modal-stat-label">Total de Processos</span><span class="modal-stat-value">${filteredData.length}</span></div>
+      `;
+      break;
+  }
+  
+  body.innerHTML = content;
+  modal.classList.add('active');
+}
+
+function showValorDetails(type) {
+  const modal = document.getElementById('detailsModal');
+  const title = document.getElementById('modalTitle');
+  const body = document.getElementById('modalBody');
+  
+  let filteredData = allData;
+  
+  if (!(currentArea === 'consolidado' && currentComprador === 'Rafael')) {
+    filteredData = filteredData.filter(d => d.COMPRADOR === currentComprador);
+  }
+  
+  if (currentFilter !== 'TODOS') {
+    filteredData = filteredData.filter(d => d.MES_ANO === currentFilter);
+  }
+  
+  let content = '';
+  
+  if (type === 'total') {
+    title.textContent = '💰 Valor Total por Fornecedor';
+    const fornValor = {};
+    filteredData.forEach(d => { fornValor[d.FORNECEDOR] = (fornValor[d.FORNECEDOR] || 0) + d.VALOR; });
+    content = '<div class="modal-scroll-list">' + Object.entries(fornValor).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([forn, valor]) => 
+      `<div class="modal-stat"><span class="modal-stat-label">${forn}</span><span class="modal-stat-value">${formatCurrency(valor)}</span></div>`
+    ).join('') + '</div>';
+  } else if (type === 'medio') {
+    title.textContent = '📊 Valor Médio por Fornecedor';
+    const fornData = {};
+    filteredData.forEach(d => {
+      if (!fornData[d.FORNECEDOR]) fornData[d.FORNECEDOR] = {total: 0, count: 0};
+      fornData[d.FORNECEDOR].total += d.VALOR;
+      fornData[d.FORNECEDOR].count++;
+    });
+    
+    const mediaFornecedores = Object.entries(fornData).map(([forn, data]) => {
+      return {fornecedor: forn, media: data.total / data.count, count: data.count};
+    }).sort((a, b) => b.media - a.media);
+    
+    content = '<div class="modal-scroll-list">' + mediaFornecedores.map(f => 
+      `<div class="modal-stat">
+        <div>
+          <div class="modal-stat-label">${f.fornecedor}</div>
+          <div style="font-size:0.75rem;color:rgba(255,255,255,0.7);margin-top:0.25rem;">${f.count} pedido${f.count > 1 ? 's' : ''}</div>
+        </div>
+        <span class="modal-stat-value">${formatCurrency(f.media)}</span>
+      </div>`
+    ).join('') + '</div>';
+  } else if (type === 'maior') {
+    title.textContent = '⭐ Maior Pedido';
+    const maior = Math.max(...filteredData.map(d => d.VALOR));
+    const pedidoMaior = filteredData.find(d => d.VALOR === maior);
+    
+    if (pedidoMaior) {
+      content = `
+        <div class="modal-stat"><span class="modal-stat-label">Valor</span><span class="modal-stat-value">${formatCurrency(pedidoMaior.VALOR)}</span></div>
+        <div class="modal-stat"><span class="modal-stat-label">Fornecedor</span><span class="modal-stat-value">${pedidoMaior.FORNECEDOR}</span></div>
+        <div class="modal-stat"><span class="modal-stat-label">Embarcação</span><span class="modal-stat-value">${pedidoMaior.EMBARCAÇÃO}</span></div>
+        <div class="modal-stat"><span class="modal-stat-label">Data</span><span class="modal-stat-value">${pedidoMaior.DATA_STR}</span></div>
+        <div class="modal-stat"><span class="modal-stat-label">Status</span><span class="modal-stat-value">${pedidoMaior.STATUS}</span></div>
+        <div class="modal-stat"><span class="modal-stat-label">Comprador</span><span class="modal-stat-value">${pedidoMaior.COMPRADOR}</span></div>
+      `;
+    }
+  }
+  
+  body.innerHTML = content;
+  modal.classList.add('active');
+}
+
+function closeModal() {
+  document.getElementById('detailsModal').classList.remove('active');
+}
+
+function formatCurrency(value) {
+  return new Intl.NumberFormat('pt-BR', {style: 'currency', currency: 'BRL'}).format(value);
+}
+
+// ═══════════════════════════════════════════════════════════
+// CONSOLIDADO BACKLOG - NOVO SISTEMA
+// ═══════════════════════════════════════════════════════════
+
+let consolidadoSemanaAtual = null;
+
+function renderConsolidadoBacklog() {
+  if (!dashboardData.consolidado) {
+    alert('Dados de backlog não disponíveis');
+    return;
+  }
+  
+  document.getElementById('normalView').classList.add('hidden');
+  const view = document.getElementById('consolidadoView');
+  view.classList.add('active');
+  
+  const d = dashboardData.consolidado;
+  
+  if (!d.semanas_disponiveis || d.semanas_disponiveis.length === 0) {
+    view.innerHTML = '<div style="text-align:center;padding:3rem;color:#ff6659"><h2>⚠️ Sem dados disponíveis</h2></div>';
+    return;
+  }
+  
+  consolidadoSemanaAtual = d.semanas_disponiveis[0];
+  renderConsolidadoSemana(consolidadoSemanaAtual);
+}
+
+// Função para mostrar detalhes do resumo geral
+function showConsolidadoResumoDetails(tipo, semana) {
+  const d = dashboardData.consolidado;
+  const resumoSemana = d.resumo_por_semana[semana];
+  
+  const modal = document.getElementById('detailsModal');
+  const title = document.getElementById('modalTitle');
+  const body = document.getElementById('modalBody');
+  
+  let content = '';
+  
+  if (tipo === 'total' || tipo === 'valor') {
+    title.textContent = tipo === 'total' ? '📦 Total de Pedidos - Semana ' + semana : '💰 Valor Total - Semana ' + semana;
+    
+    content = '<div style="margin-bottom:1rem;font-weight:700;font-size:1.1rem">Por Comprador:</div>';
+    
+    const dados = [];
+    d.compradores.forEach(comp => {
+      const r = resumoSemana[comp];
+      if (r) {
+        dados.push({
+          comprador: comp,
+          qtd: r.totais.backlog_qtd,
+          valor: r.totais.backlog_valor
+        });
+      }
+    });
+    
+    dados.sort((a, b) => tipo === 'total' ? b.qtd - a.qtd : b.valor - a.valor);
+    
+    dados.forEach(d => {
+      content += `
+        <div class="modal-stat">
+          <span class="modal-stat-label">👤 ${d.comprador}</span>
+          <span class="modal-stat-value">${d.qtd} | ${formatCurrency(d.valor)}</span>
+        </div>
+      `;
+    });
+    
+  } else if (tipo === 'var_qtd' || tipo === 'var_valor') {
+    const idxSemana = d.semanas_disponiveis.indexOf(semana);
+    const semanaAnterior = d.semanas_disponiveis[idxSemana + 1] || semana;
+    const resumoAnterior = d.resumo_por_semana[semanaAnterior] || {};
+    
+    title.textContent = tipo === 'var_qtd' ? '📊 Variação de Quantidade' : '💰 Variação de Valor';
+    
+    content = `<div style="margin-bottom:1rem;font-weight:700;font-size:1.1rem">Semana ${semana} vs Semana ${semanaAnterior}:</div>`;
+    
+    const dados = [];
+    d.compradores.forEach(comp => {
+      const r = resumoSemana[comp];
+      const rAnt = resumoAnterior[comp] || {totais: {backlog_qtd: 0, backlog_valor: 0}};
+      
+      if (r) {
+        const varQtd = r.totais.backlog_qtd - rAnt.totais.backlog_qtd;
+        const varValor = r.totais.backlog_valor - rAnt.totais.backlog_valor;
+        const varQtdPct = rAnt.totais.backlog_qtd > 0 ? ((varQtd / rAnt.totais.backlog_qtd) * 100) : 0;
+        const varValorPct = rAnt.totais.backlog_valor > 0 ? ((varValor / rAnt.totais.backlog_valor) * 100) : 0;
+        
+        dados.push({
+          comprador: comp,
+          varQtd: varQtd,
+          varQtdPct: varQtdPct,
+          varValor: varValor,
+          varValorPct: varValorPct
+        });
+      }
+    });
+    
+    dados.sort((a, b) => tipo === 'var_qtd' ? b.varQtd - a.varQtd : b.varValor - a.varValor);
+    
+    dados.forEach(d => {
+      const cor = (tipo === 'var_qtd' ? d.varQtd : d.varValor) >= 0 ? '#ff3366' : '#00e676';
+      const icone = (tipo === 'var_qtd' ? d.varQtd : d.varValor) >= 0 ? '↑' : '↓';
+      
+      content += `
+        <div class="modal-stat">
+          <span class="modal-stat-label">👤 ${d.comprador}</span>
+          <span class="modal-stat-value" style="color:${cor}">
+            ${icone} ${tipo === 'var_qtd' ? 
+              `${d.varQtd >= 0 ? '+' : ''}${d.varQtd} (${Math.abs(d.varQtdPct).toFixed(1)}%)` : 
+              `${formatCurrency(d.varValor)} (${Math.abs(d.varValorPct).toFixed(1)}%)`
+            }
+          </span>
+        </div>
+      `;
+    });
+  }
+  
+  body.innerHTML = content;
+  modal.classList.add('active');
+}
+
+// Função para mostrar detalhes de fornecedor no consolidado
+function showConsolidadoFornecedorDetails(comprador, fornecedor, semana) {
+  const d = dashboardData.consolidado;
+  const resumoSemana = d.resumo_por_semana[semana];
+  const resumoComprador = resumoSemana[comprador];
+  
+  if (!resumoComprador) return;
+  
+  // Encontra registros do fornecedor
+  const registrosFornecedor = resumoComprador.registros.filter(r => r.fornecedor === fornecedor);
+  
+  if (registrosFornecedor.length === 0) return;
+  
+  const modal = document.getElementById('detailsModal');
+  const title = document.getElementById('modalTitle');
+  const body = document.getElementById('modalBody');
+  
+  // Calcula totais
+  const totais = {
+    backlog_qtd: registrosFornecedor.reduce((sum, r) => sum + r.backlog_qtd, 0),
+    backlog_valor: registrosFornecedor.reduce((sum, r) => sum + r.backlog_valor, 0),
+    sob_analise_qtd: registrosFornecedor.reduce((sum, r) => sum + r.sob_analise_qtd, 0),
+    sob_analise_valor: registrosFornecedor.reduce((sum, r) => sum + r.sob_analise_valor, 0),
+    pend_manut_qtd: registrosFornecedor.reduce((sum, r) => sum + r.pend_manut_qtd, 0),
+    pend_manut_valor: registrosFornecedor.reduce((sum, r) => sum + r.pend_manut_valor, 0),
+    aguard_aprov_qtd: registrosFornecedor.reduce((sum, r) => sum + r.aguard_aprov_qtd, 0),
+    aguard_aprov_valor: registrosFornecedor.reduce((sum, r) => sum + r.aguard_aprov_valor, 0),
+    pend_forn_qtd: registrosFornecedor.reduce((sum, r) => sum + r.pend_forn_qtd, 0),
+    pend_forn_valor: registrosFornecedor.reduce((sum, r) => sum + r.pend_forn_valor, 0)
+  };
+  
+  title.textContent = `🏢 ${fornecedor} - ${comprador}`;
+  
+  let content = `
+    <div class="modal-stat">
+      <span class="modal-stat-label">📦 Backlog Total</span>
+      <span class="modal-stat-value">${totais.backlog_qtd} pedidos</span>
+    </div>
+    <div class="modal-stat">
+      <span class="modal-stat-label">💰 Valor Total</span>
+      <span class="modal-stat-value">${formatCurrency(totais.backlog_valor)}</span>
+    </div>
+    <div style="margin-top:1.5rem;font-weight:700;font-size:1.1rem;margin-bottom:1rem">📊 Breakdown:</div>
+    <div class="modal-stat">
+      <span class="modal-stat-label">🔍 Sob Análise</span>
+      <span class="modal-stat-value">${totais.sob_analise_qtd} | ${formatCurrency(totais.sob_analise_valor)}</span>
+    </div>
+    <div class="modal-stat">
+      <span class="modal-stat-label">🔧 Pend. Manutenção</span>
+      <span class="modal-stat-value">${totais.pend_manut_qtd} | ${formatCurrency(totais.pend_manut_valor)}</span>
+    </div>
+    <div class="modal-stat">
+      <span class="modal-stat-label">⏳ Aguard. Aprovação</span>
+      <span class="modal-stat-value">${totais.aguard_aprov_qtd} | ${formatCurrency(totais.aguard_aprov_valor)}</span>
+    </div>
+    <div class="modal-stat">
+      <span class="modal-stat-label">📦 Pend. Fornecedor</span>
+      <span class="modal-stat-value">${totais.pend_forn_qtd} | ${formatCurrency(totais.pend_forn_valor)}</span>
+    </div>
+  `;
+  
+  body.innerHTML = content;
+  modal.classList.add('active');
+}
+
+// Função para mostrar detalhes do card de comprador
+function showConsolidadoCompradorDetails(comprador, semana) {
+  const d = dashboardData.consolidado;
+  const resumoSemana = d.resumo_por_semana[semana];
+  const resumoComprador = resumoSemana[comprador];
+  
+  if (!resumoComprador) return;
+  
+  const modal = document.getElementById('detailsModal');
+  const title = document.getElementById('modalTitle');
+  const body = document.getElementById('modalBody');
+  
+  const t = resumoComprador.totais;
+  
+  title.textContent = `👤 ${comprador} - Semana ${semana}`;
+  
+  let content = `
+    <div class="modal-stat">
+      <span class="modal-stat-label">📦 Backlog Total</span>
+      <span class="modal-stat-value">${t.backlog_qtd} pedidos</span>
+    </div>
+    <div class="modal-stat">
+      <span class="modal-stat-label">💰 Valor Total</span>
+      <span class="modal-stat-value">${formatCurrency(t.backlog_valor)}</span>
+    </div>
+    <div style="margin-top:1.5rem;font-weight:700;font-size:1.1rem;margin-bottom:1rem">📊 Breakdown Completo:</div>
+    <div class="modal-stat">
+      <span class="modal-stat-label">🔍 Sob Análise</span>
+      <span class="modal-stat-value">${t.sob_analise_qtd} pedidos | ${formatCurrency(t.sob_analise_valor)}</span>
+    </div>
+    <div class="modal-stat">
+      <span class="modal-stat-label">🔧 Pend. Manutenção</span>
+      <span class="modal-stat-value">${t.pend_manut_qtd} pedidos | ${formatCurrency(t.pend_manut_valor)}</span>
+    </div>
+    <div class="modal-stat">
+      <span class="modal-stat-label">⏳ Aguard. Aprovação</span>
+      <span class="modal-stat-value">${t.aguard_aprov_qtd} pedidos | ${formatCurrency(t.aguard_aprov_valor)}</span>
+    </div>
+    <div class="modal-stat">
+      <span class="modal-stat-label">📦 Pend. Fornecedor</span>
+      <span class="modal-stat-value">${t.pend_forn_qtd} pedidos | ${formatCurrency(t.pend_forn_valor)}</span>
+    </div>
+    <div style="margin-top:1.5rem;font-weight:700;font-size:1.1rem;margin-bottom:1rem">🏆 Top 10 Fornecedores:</div>
+    <div class="modal-scroll-list">
+  `;
+  
+  resumoComprador.top_fornecedores.slice(0, 10).forEach((forn, idx) => {
+    content += `
+      <div class="modal-stat">
+        <span class="modal-stat-label">${idx + 1}. ${forn.fornecedor}</span>
+        <span class="modal-stat-value">${forn.backlog_qtd} | ${formatCurrency(forn.backlog_valor)}</span>
+      </div>
+    `;
+  });
+  
+  content += '</div>';
+  
+  body.innerHTML = content;
+  modal.classList.add('active');
+}
+
+// Função para mostrar detalhes de categoria do breakdown
+function showConsolidadoBreakdownDetails(comprador, categoria, semana) {
+  const d = dashboardData.consolidado;
+  const resumoSemana = d.resumo_por_semana[semana];
+  const resumoComprador = resumoSemana[comprador];
+  
+  if (!resumoComprador) return;
+  
+  const modal = document.getElementById('detailsModal');
+  const title = document.getElementById('modalTitle');
+  const body = document.getElementById('modalBody');
+  
+  const categorias = {
+    'sa': {nome: '🔍 Sob Análise', qtd: 'sob_analise_qtd', valor: 'sob_analise_valor'},
+    'pm': {nome: '🔧 Pend. Manutenção', qtd: 'pend_manut_qtd', valor: 'pend_manut_valor'},
+    'aa': {nome: '⏳ Aguard. Aprovação', qtd: 'aguard_aprov_qtd', valor: 'aguard_aprov_valor'},
+    'pf': {nome: '📦 Pend. Fornecedor', qtd: 'pend_forn_qtd', valor: 'pend_forn_valor'}
+  };
+  
+  const cat = categorias[categoria];
+  if (!cat) return;
+  
+  const t = resumoComprador.totais;
+  
+  title.textContent = `${cat.nome} - ${comprador}`;
+  
+  // Agrupa por fornecedor para esta categoria
+  const fornecedoresMap = {};
+  resumoComprador.registros.forEach(r => {
+    const qtd = r[cat.qtd];
+    const valor = r[cat.valor];
+    if (qtd > 0) {
+      if (!fornecedoresMap[r.fornecedor]) {
+        fornecedoresMap[r.fornecedor] = {qtd: 0, valor: 0};
+      }
+      fornecedoresMap[r.fornecedor].qtd += qtd;
+      fornecedoresMap[r.fornecedor].valor += valor;
+    }
+  });
+  
+  const fornecedoresOrdenados = Object.entries(fornecedoresMap)
+    .sort((a, b) => b[1].valor - a[1].valor);
+  
+  let content = `
+    <div class="modal-stat">
+      <span class="modal-stat-label">Total</span>
+      <span class="modal-stat-value">${t[cat.qtd]} pedidos | ${formatCurrency(t[cat.valor])}</span>
+    </div>
+    <div style="margin-top:1.5rem;font-weight:700;font-size:1.1rem;margin-bottom:1rem">🏢 Por Fornecedor:</div>
+    <div class="modal-scroll-list">
+  `;
+  
+  fornecedoresOrdenados.forEach(([forn, dados], idx) => {
+    content += `
+      <div class="modal-stat">
+        <span class="modal-stat-label">${idx + 1}. ${forn}</span>
+        <span class="modal-stat-value">${dados.qtd} | ${formatCurrency(dados.valor)}</span>
+      </div>
+    `;
+  });
+  
+  content += '</div>';
+  
+  body.innerHTML = content;
+  modal.classList.add('active');
+}
+
+function renderConsolidadoSemana(semana) {
+  const view = document.getElementById('consolidadoView');
+  const d = dashboardData.consolidado;
+  const resumoSemana = d.resumo_por_semana[semana];
+  
+  if (!resumoSemana) {
+    view.innerHTML = '<div style="text-align:center;padding:3rem;color:#ff6659"><h2>⚠️ Dados indisponíveis para esta semana</h2></div>';
+    return;
+  }
+  
+  const idxSemana = d.semanas_disponiveis.indexOf(semana);
+  const semanaAnterior = d.semanas_disponiveis[idxSemana + 1] || semana;
+  const resumoAnterior = d.resumo_por_semana[semanaAnterior] || {};
+  
+  let tQtd = 0, tVal = 0, tVQtd = 0, tVVal = 0;
+  
+  d.compradores.forEach(c => {
+    const rAtual = resumoSemana[c]?.totais || {backlog_qtd: 0, backlog_valor: 0};
+    const rAnt = resumoAnterior[c]?.totais || {backlog_qtd: 0, backlog_valor: 0};
+    tQtd += rAtual.backlog_qtd;
+    tVal += rAtual.backlog_valor;
+    tVQtd += (rAtual.backlog_qtd - rAnt.backlog_qtd);
+    tVVal += (rAtual.backlog_valor - rAnt.backlog_valor);
+  });
+  
+  let h = `
+    <div class="cons-header">
+      <div class="cons-title">📊 ANÁLISE CONSOLIDADA - BACKLOG</div>
+      <div class="cons-subtitle">Análise de Pendências por Comprador</div>
+      <div class="cons-filter">
+        <div class="cons-filter-label">📅 Selecione a Semana:</div>
+        <select class="cons-filter-select" onchange="renderConsolidadoSemana(parseInt(this.value))">`;
+  
+  d.semanas_disponiveis.forEach(s => {
+    h += `<option value="${s}" ${s === semana ? 'selected' : ''}>Semana ${s}</option>`;
+  });
+  
+  h += `
+        </select>
+      </div>
+    </div>
+    
+    <div class="cons-resumo">
+      <div class="cons-resumo-item" onclick="showConsolidadoResumoDetails('total', ${semana})">
+        <div class="cons-resumo-label">Total Pedidos</div>
+        <div class="cons-resumo-value">${tQtd}</div>
+      </div>
+      <div class="cons-resumo-item" onclick="showConsolidadoResumoDetails('valor', ${semana})">
+        <div class="cons-resumo-label">Valor Total</div>
+        <div class="cons-resumo-value">${formatCurrency(tVal)}</div>
+      </div>
+      <div class="cons-resumo-item" onclick="showConsolidadoResumoDetails('var_qtd', ${semana})">
+        <div class="cons-resumo-label">Variação Qtd</div>
+        <div class="cons-resumo-value" style="color:${tVQtd >= 0 ? '#00e676' : '#ff3366'}">${tVQtd >= 0 ? '+' : ''}${tVQtd}</div>
+      </div>
+      <div class="cons-resumo-item" onclick="showConsolidadoResumoDetails('var_valor', ${semana})">
+        <div class="cons-resumo-label">Variação Valor</div>
+        <div class="cons-resumo-value" style="color:${tVVal >= 0 ? '#00e676' : '#ff3366'}">${formatCurrency(tVVal)}</div>
+      </div>
+    </div>
+    
+    <div class="cons-cards">`;
+  
+  d.compradores.forEach(comp => {
+    const r = resumoSemana[comp];
+    if (!r) return;
+    
+    const rAnt = resumoAnterior[comp] || {totais: {backlog_qtd: 0, backlog_valor: 0}};
+    const vq = r.totais.backlog_qtd - rAnt.totais.backlog_qtd;
+    const vv = r.totais.backlog_valor - rAnt.totais.backlog_valor;
+    const vqp = rAnt.totais.backlog_qtd > 0 ? ((vq / rAnt.totais.backlog_qtd) * 100) : 0;
+    const vvp = rAnt.totais.backlog_valor > 0 ? ((vv / rAnt.totais.backlog_valor) * 100) : 0;
+    const vc = vq >= 0 ? 'neg' : 'pos'; // INVERTIDO: aumentou=neg(vermelho), diminuiu=pos(verde)
+    const vi = vq >= 0 ? '↑' : '↓';
+    const vcol = vq >= 0 ? '#ff3366' : '#00e676'; // MANTÉM: vermelho aumentou, verde diminuiu
+    
+    h += `
+      <div class="cons-card" data-comp="${comp}" onclick="showConsolidadoCompradorDetails('${comp}', ${semana})">
+        <div class="cons-head">
+          <div class="cons-nome">👤 ${comp}</div>
+          <div class="cons-var ${vc}">
+            <span style="font-size:1.2rem">${vi}</span>
+            <span>${Math.abs(vq)} (${Math.abs(vqp).toFixed(1)}%)</span>
+          </div>
+        </div>
+        
+        <div class="cons-main">
+          <div class="cons-row">
+            <div>
+              <div class="cons-lbl">📦 Backlog Total</div>
+              <div class="cons-val">${r.totais.backlog_qtd}</div>
+            </div>
+            <div style="text-align:right">
+              <div class="cons-lbl">💰 Valor</div>
+              <div class="cons-val">${formatCurrency(r.totais.backlog_valor)}</div>
+            </div>
+          </div>
+          <div class="cons-det">Semana ${semanaAnterior}: ${rAnt.totais.backlog_qtd} pedidos | ${formatCurrency(rAnt.totais.backlog_valor)}</div>
+          <div class="cons-det" style="color:${vcol};font-weight:700">${vi} ${vq >= 0 ? '+' : ''}${vq} pedidos | ${vi} ${formatCurrency(vv)} (${vvp.toFixed(1)}%)</div>
+        </div>
+        
+        <div class="cons-break" onclick="event.stopPropagation()">
+          <div class="cons-break-item" data-t="sa" onclick="showConsolidadoBreakdownDetails('${comp}', 'sa', ${semana})">
+            <div class="cons-break-lbl">🔍 Sob Análise</div>
+            <div class="cons-break-val">${r.totais.sob_analise_qtd} pedidos</div>
+            <div class="cons-break-mon">${formatCurrency(r.totais.sob_analise_valor)}</div>
+          </div>
+          <div class="cons-break-item" data-t="pm" onclick="showConsolidadoBreakdownDetails('${comp}', 'pm', ${semana})">
+            <div class="cons-break-lbl">🔧 Pend. Manutenção</div>
+            <div class="cons-break-val">${r.totais.pend_manut_qtd} pedidos</div>
+            <div class="cons-break-mon">${formatCurrency(r.totais.pend_manut_valor)}</div>
+          </div>
+          <div class="cons-break-item" data-t="aa" onclick="showConsolidadoBreakdownDetails('${comp}', 'aa', ${semana})">
+            <div class="cons-break-lbl">⏳ Aguard. Aprovação</div>
+            <div class="cons-break-val">${r.totais.aguard_aprov_qtd} pedidos</div>
+            <div class="cons-break-mon">${formatCurrency(r.totais.aguard_aprov_valor)}</div>
+          </div>
+          <div class="cons-break-item" data-t="pf" onclick="showConsolidadoBreakdownDetails('${comp}', 'pf', ${semana})">
+            <div class="cons-break-lbl">📦 Pend. Fornecedor</div>
+            <div class="cons-break-val">${r.totais.pend_forn_qtd} pedidos</div>
+            <div class="cons-break-mon">${formatCurrency(r.totais.pend_forn_valor)}</div>
+          </div>
+        </div>
+        
+        <div class="cons-forn" onclick="event.stopPropagation()">
+          <div class="cons-forn-tit">🏆 Top 5 Fornecedores</div>
+          ${r.top_fornecedores.map((f, i) => `
+            <div class="cons-forn-item" onclick="showConsolidadoFornecedorDetails('${comp}', '${f.fornecedor.replace(/'/g, "\\'")}', ${semana})">
+              <div class="cons-forn-nome">${i + 1}. ${f.fornecedor}</div>
+              <div class="cons-forn-stats">
+                <div class="cons-forn-qtd">${f.backlog_qtd}</div>
+                <div class="cons-forn-val">${formatCurrency(f.backlog_valor)}</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>`;
+  });
+  
+  h += '</div>';
+  view.innerHTML = h;
+}
+</script>
+</body>
+</html>
