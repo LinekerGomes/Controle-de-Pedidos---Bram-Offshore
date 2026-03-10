@@ -390,15 +390,15 @@ body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;background-
 </div>
 
 <!-- CHATBOT -->
-<div class="chatbot-fab" onclick="toggleChatbot()" id="chatbotFab">🔧</div>
+<div class="chatbot-fab" onclick="toggleChatbot()" id="chatbotFab">🤖</div>
 <div class="chatbot-container" id="chatbotContainer">
   <div class="chatbot-header">
-    <div class="chatbot-title"><span>🔧</span><span>Zé do Serviço</span></div>
+    <div class="chatbot-title"><span>🤖</span><span>Zé do Serviço</span></div>
     <button class="chatbot-close" onclick="toggleChatbot()">×</button>
   </div>
   <div class="chatbot-messages" id="chatbotMessages">
     <div class="chatbot-message bot">
-      <div>Olá! Sou o Zé do Serviço 🔧</div>
+      <div>Olá! Sou o Zé do Serviço 🤖</div>
       <div style="font-size:.85rem;opacity:.8;margin-top:.5rem">Pergunte sobre seus pedidos, backlog, fornecedores ou tendências!</div>
       <div class="chatbot-suggestions">
         <div class="chatbot-suggestion" onclick="sendSuggestion('Qual meu backlog atual?')">Meu backlog</div>
@@ -497,15 +497,31 @@ function changeComprador(novoComprador) {
     opt.classList.remove('active');
     if (opt.textContent.trim().includes(novoComprador)) opt.classList.add('active');
   });
+  
   const areaSelector = document.getElementById('areaSelector');
+  const filterBar = document.querySelector('.filter-bar');
+  
+  // ROBSON: Vai direto para Consolidado, sem filtro de área
+  if (novoComprador === 'Robson') {
+    filterBar.style.display = 'none'; // Esconde filtro de área
+    currentArea = 'consolidado';
+    renderConsolidadoBacklog(); // Mostra consolidado
+    renderAnaliseIA(); // Mostra IA
+    return;
+  }
+  
+  // Outros compradores: mostram filtro de área
+  filterBar.style.display = 'block';
   areaSelector.innerHTML = '<option value="manutencao">🔧 Manutenção</option><option value="operacoes">⚙️ Operações</option>';
-  // ROBSON E RAFAEL TÊM ACESSO AO CONSOLIDADO
-  if (novoComprador === 'Rafael' || novoComprador === 'Robson') {
+  
+  // RAFAEL TEM ACESSO AO CONSOLIDADO
+  if (novoComprador === 'Rafael') {
     const optConsolidado = document.createElement('option');
     optConsolidado.value = 'consolidado';
     optConsolidado.textContent = '📊 CONSOLIDADO';
     areaSelector.appendChild(optConsolidado);
   }
+  
   currentArea = 'manutencao';
   areaSelector.value = 'manutencao';
   changeArea();
@@ -514,13 +530,14 @@ function changeComprador(novoComprador) {
 
 function changeArea() {
   currentArea = document.getElementById('areaSelector').value;
-  if (currentArea === 'consolidado' && currentComprador === 'Rafael') {
+  // CONSOLIDADO para Rafael ou Robson
+  if (currentArea === 'consolidado' && (currentComprador === 'Rafael' || currentComprador === 'Robson')) {
     renderConsolidadoBacklog();
     return;
   }
   document.getElementById('consolidadoView').classList.remove('active');
   document.getElementById('normalView').classList.remove('hidden');
-  if (currentArea === 'consolidado' && currentComprador === 'Rafael') {
+  if (currentArea === 'consolidado' && (currentComprador === 'Rafael' || currentComprador === 'Robson')) {
     if (!dashboardData.dados.CONSOLIDADO) {
       alert('Dados consolidados não disponíveis');
       return;
@@ -1094,7 +1111,7 @@ function toggleChatbot() {
   } else {
     container.classList.remove('active');
     fab.classList.remove('active');
-    fab.textContent = '🔧';
+    fab.textContent = '🤖';
   }
 }
 
